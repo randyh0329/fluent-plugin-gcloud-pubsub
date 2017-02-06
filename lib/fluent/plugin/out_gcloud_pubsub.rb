@@ -1,9 +1,10 @@
-require 'google/cloud/pubsub'
+require 'google/apis/pubsub_v1'
 require 'fluent/output'
 
 module Fluent
   class GcloudPubSubOutput < BufferedOutput
     Fluent::Plugin.register_output('gcloud_pubsub', self)
+    Pubsub = Google::Apis::PubsubV1
 
     config_set_default :buffer_type,                'lightening'
     config_set_default :flush_interval,             1
@@ -34,12 +35,9 @@ module Fluent
     def start
       super
 
-      #pubsub = (Gcloud.new @project, @key).pubsub
-      pubsub = Google::Cloud::Pubsub.new(
-       project: @project,
-       keyfile: @key
-      )
-      @client = pubsub.topic @topic, autocreate: @autocreate_topic
+      @pubsub = Pubsub::PubsubService.new
+      @pubsub.authorization = Google::Auth.get_application_default([Pubsub::AUTH_PUBSUB])
+      @topic_path = "projects/#{@project}/topics/#{@topic}"
     end
 
     def format(tag, time, record)
@@ -47,18 +45,13 @@ module Fluent
     end
 
     def write(chunk)
-      messages = []
-
+      request = Pubsub::PublishRequest.new(messages: [])
       chunk.msgpack_each do |tag, time, record|
-        messages << record.to_json
+        request.messages << Pubsub::Message.new(data: record.to_json)
       end
 
-      if messages.length > 0
-        @client.publish do |batch|
-          messages.each do |m|
-            batch.publish m
-          end
-        end
+      if request.messages.length > 0
+        @pubsub.publish_topic(@topic_path, request)
       end
     rescue => e
       log.error "unexpected error", :error=>$!.to_s
