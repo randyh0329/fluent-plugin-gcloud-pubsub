@@ -5,6 +5,7 @@ require 'fluent/parser'
 module Fluent
   class GcloudPubSubInput < Input
     Fluent::Plugin.register_input('gcloud_pubsub', self)
+    Pubsub = Google::Apis::PubsubV1
 
     config_param :tag,                :string
     config_param :project,            :string,  :default => nil
@@ -41,9 +42,9 @@ module Fluent
       super
 
       #pubsub = (Gcloud.new @project, @key).pubsub
-      Pubsub = Google::Apis::PubsubV1
+      #Pubsub = Google::Apis::PubsubV1
       @pubsub = Pubsub::PubsubService.new
-      pubsub.authorization = Google::Auth.get_application_default([Pubsub::AUTH_PUBSUB])
+      @pubsub.authorization = Google::Auth.get_application_default([Pubsub::AUTH_PUBSUB])
 	
       @subscription_full = "projects/#{@project}/subscriptions/#{@subscription}"
 
@@ -68,10 +69,11 @@ module Fluent
 
     def subscribe
       until @stop_subscribing
-        messages = @pubsub.pull_subscription(@subscription_full, Pubsub::PullRequest.new(max_messages: @max_messages, return_immediately: @return_immediately))
+        response = @pubsub.pull_subscription(@subscription_full, Pubsub::PullRequest.new(max_messages: @max_messages, return_immediately: @return_immediately))
         #messages = @client.pull max: @max_messages, immediate: @return_immediately
-
-        if messages.length > 0
+        # if response.received_messages   
+        messages = response.received_messages  
+        if !messages.nil? && messages.length > 0
           es = parse_messages(messages)
           unless es.empty?
             begin
@@ -79,8 +81,11 @@ module Fluent
             rescue
               # ignore errors. Engine shows logs and backtraces.
             end
-            @client.acknowledge messages
-            log.debug "#{messages.length} message(s) processed"
+            # @client.acknowledge messages
+            ack_ids = response.received_messages.map{ |msg| msg.ack_id }
+            @pubsub.acknowledge_subscription(@subscription_full, Pubsub::AcknowledgeRequest.new(ack_ids: ack_ids))
+            
+	    log.debug "#{messages.length} message(s) processed"
           end
         end
 
@@ -96,6 +101,7 @@ module Fluent
     def parse_messages(messages)
       es = MultiEventStream.new
       messages.each do |m|
+        puts "#{m.message.data}"
         convert_line_to_event(m.message.data, es)
       end
       es
