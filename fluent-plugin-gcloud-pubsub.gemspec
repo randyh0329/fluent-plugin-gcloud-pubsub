@@ -7,7 +7,7 @@ Gem::Specification.new do |gem|
   gem.license     = "MIT"
   gem.homepage    = "https://github.com/mdoi/fluent-plugin-gcloud-pubsub"
   gem.summary     = gem.description
-  gem.version     = "0.0.5"
+  gem.version     = "0.1.0"
   gem.authors     = ["Masayuki DOI"]
   gem.email       = "dotquasar@gmail.com"
   gem.has_rdoc    = false
@@ -17,7 +17,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ['lib']
 
   gem.add_runtime_dependency "fluentd", "~> 0.12.0"
-  gem.add_runtime_dependency "gcloud", "= 0.6.3"
+  gem.add_runtime_dependency "google-cloud-pubsub", "~> 0.22.0"
   gem.add_runtime_dependency "fluent-plugin-buffer-lightening", ">= 0.0.2"
 
   gem.add_development_dependency "bundler"
