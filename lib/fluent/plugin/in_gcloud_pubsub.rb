@@ -1,4 +1,4 @@
-require 'google/cloud/pubsub'
+require 'google/apis/pubsub_v1'
 require 'fluent/input'
 require 'fluent/parser'
 
@@ -41,14 +41,14 @@ module Fluent
       super
 
       #pubsub = (Gcloud.new @project, @key).pubsub
-      pubsub = Google::Cloud::Pubsub.new(
-       project: @project,
-       keyfile: @key
-      )
+      Pubsub = Google::Apis::PubsubV1
+      @pubsub = Pubsub::PubsubService.new
+      pubsub.authorization = Google::Auth.get_application_default([Pubsub::AUTH_PUBSUB])
+	
+      @subscription_full = "projects/#{@project}/subscriptions/#{@subscription}"
 
-
-      topic = pubsub.topic @topic
-      @client = topic.subscription @subscription
+      #topic = pubsub.topic @topic
+      #@client = topic.subscription @subscription
       @stop_subscribing = false
       @subscribe_thread = Thread.new(&method(:subscribe))
     end
@@ -68,7 +68,8 @@ module Fluent
 
     def subscribe
       until @stop_subscribing
-        messages = @client.pull max: @max_messages, immediate: @return_immediately
+        messages = @pubsub.pull_subscription(@subscription_full, Pubsub::PullRequest.new(max_messages: @max_messages, return_immediately: @return_immediately))
+        #messages = @client.pull max: @max_messages, immediate: @return_immediately
 
         if messages.length > 0
           es = parse_messages(messages)
