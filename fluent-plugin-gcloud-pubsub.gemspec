@@ -8,8 +8,8 @@ Gem::Specification.new do |gem|
   gem.homepage    = "https://github.com/mdoi/fluent-plugin-gcloud-pubsub"
   gem.summary     = gem.description
   gem.version     = "0.1.0"
-  gem.authors     = ["Masayuki DOI"]
-  gem.email       = "dotquasar@gmail.com"
+  gem.authors     = ["Masayuki DOI", "Randy Huang"]
+  gem.email       = "randyh0329@gmail.com"
   gem.has_rdoc    = false
   gem.files       = `git ls-files`.split("\n")
   gem.test_files  = `git ls-files -- {test,spec,features}/*`.split("\n")

@@ -38,6 +38,12 @@ module Fluent
       @pubsub = Pubsub::PubsubService.new
       @pubsub.authorization = Google::Auth.get_application_default([Pubsub::AUTH_PUBSUB])
       @topic_path = "projects/#{@project}/topics/#{@topic}"
+
+      if @autocreate_topic
+        @pubsub.create_topic(@topic_path)
+      end
+
+
     end
 
     def format(tag, time, record)
